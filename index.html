@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Слепая печать</title>
+<style>
+:root{
+  --bg:#f5f4f0; --panel:#ffffff; --ink:#1d1f23; --muted:#6d717a; --line:#e3e1db;
+  --accent:#2f6fdb; --accent-ink:#ffffff; --ok:#258a52; --bad:#d23f3f; --fix:#c98a10;
+  --cur:#2f6fdb26; --errbg:#d23f3f2e;
+  --key:#ffffff; --keyline:#d3d1ca; --keyink:#30333a;
+  --f0:#f4d6dd; --f1:#f6e1c8; --f2:#f1edbd; --f3:#d3eccd; --f4:#e6e6e6; --f6:#cfe6f1; --f7:#d9d9f6; --f8:#ead5f1; --f9:#f1d3e3;
+  --mono: "JetBrains Mono","Fira Code","DejaVu Sans Mono","Liberation Mono",Consolas,monospace;
+  --sans: system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","DejaVu Sans",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171b; --panel:#1e2127; --ink:#e6e7ea; --muted:#9097a3; --line:#2f333b;
+    --accent:#6c9fff; --accent-ink:#0d1220; --ok:#4cc483; --bad:#ff6b6b; --fix:#f0b84a;
+    --cur:#6c9fff33; --errbg:#ff6b6b33;
+    --key:#262a31; --keyline:#363b44; --keyink:#d7dae0;
+    --f0:#4b2f37; --f1:#4a3a29; --f2:#44422a; --f3:#2d4430; --f4:#33363c; --f6:#29404b; --f7:#333350; --f8:#40304b; --f9:#4b2d41;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171b; --panel:#1e2127; --ink:#e6e7ea; --muted:#9097a3; --line:#2f333b;
+  --accent:#6c9fff; --accent-ink:#0d1220; --ok:#4cc483; --bad:#ff6b6b; --fix:#f0b84a;
+  --cur:#6c9fff33; --errbg:#ff6b6b33;
+  --key:#262a31; --keyline:#363b44; --keyink:#d7dae0;
+  --f0:#4b2f37; --f1:#4a3a29; --f2:#44422a; --f3:#2d4430; --f4:#33363c; --f6:#29404b; --f7:#333350; --f8:#40304b; --f9:#4b2d41;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+kbd{font-family:var(--mono);font-size:.8em;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--muted)}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{font-weight:700;font-size:18px;letter-spacing:.2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;padding:6px 14px}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:4px}
+.tabs button{border-color:transparent;background:transparent}
+.tabs button.on{border-color:var(--line);background:var(--bg);font-weight:600}
+
+.layout{display:grid;grid-template-columns:280px 1fr;gap:20px;padding:20px;max-width:1400px;margin:0 auto}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+aside{display:flex;flex-direction:column;gap:16px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.box h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.chk{display:flex;gap:8px;align-items:flex-start;margin:7px 0;cursor:pointer;line-height:1.3}
+.chk input{margin-top:2px}
+.rowset{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0}
+.rowset input,.rowset select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.rowset input{width:80px}
+
+.lessons{display:flex;flex-direction:column;gap:3px;max-height:56vh;overflow:auto;margin:0 -6px;padding:0 6px}
+.lesson{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;text-align:left;border-color:transparent;background:transparent;padding:6px 8px}
+.lesson.on{border-color:var(--accent);background:var(--bg)}
+.lesson .n{color:var(--muted);font-variant-numeric:tabular-nums}
+.lesson .k{font-family:var(--mono)}
+.lesson .s{font-size:12px;color:var(--fix);white-space:nowrap}
+.lesson .s .e{color:var(--line)}
+.lesson.rec .n{color:var(--accent);font-weight:700}
+
+main{min-width:0}
+#trainer{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px 22px}
+.exhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+#exTitle{font-weight:600;font-size:17px}
+#exSub{color:var(--muted);font-size:13px;margin-top:3px}
+.exbtns{display:flex;gap:8px}
+.statsbar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:16px 0 10px}
+.stat{background:var(--bg);border-radius:10px;padding:8px 12px}
+.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--muted)}
+@media (max-width:640px){.statsbar{grid-template-columns:repeat(3,1fr)}}
+.progress{height:4px;background:var(--bg);border-radius:2px;overflow:hidden}
+#prog{height:100%;width:0;background:var(--accent);transition:width .15s}
+
+.viewport{position:relative;overflow:hidden;margin:18px 0 6px;font-family:var(--mono);font-size:27px;line-height:1.75}
+#text{position:relative;transition:transform .15s ease-out}
+.w{display:inline-block;white-space:pre}
+.c{border-radius:3px}
+.c.ok{color:var(--muted)}
+.c.fixed{color:var(--fix)}
+.c.bad{color:var(--bad);text-decoration:underline}
+.c.bad.sp{background:var(--errbg)}
+.c.cur{background:var(--cur);box-shadow:inset 0 -3px 0 var(--accent)}
+.c.err{background:var(--errbg);box-shadow:inset 0 -3px 0 var(--bad)}
+.shake{animation:shake .18s}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.placeholder{font-family:var(--sans);font-size:16px;color:var(--muted);line-height:1.5}
+
+.warn{min-height:22px;color:var(--bad);font-size:14px;font-weight:600}
+.hint{min-height:22px;color:var(--muted);font-size:14px;margin-bottom:10px}
+.hint b{color:var(--ink);font-family:var(--mono)}
+
+.kbd{display:flex;flex-direction:column;gap:5px;max-width:860px;margin:0 auto;user-select:none}
+.krow{display:flex;gap:5px}
+.key{flex:1 1 0;min-width:0;height:48px;border:1px solid var(--keyline);border-bottom-width:3px;border-radius:7px;background:var(--key);color:var(--keyink);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:var(--mono);font-size:16px;position:relative;transition:background .08s,transform .08s}
+.key .up{font-size:11px;color:var(--muted);line-height:1}
+.key .lo{line-height:1.1}
+.key.fn{font-family:var(--sans);font-size:12px;color:var(--muted)}
+.key.spacer{visibility:hidden}
+.kbd.color .key.f0{background:var(--f0)} .kbd.color .key.f1{background:var(--f1)} .kbd.color .key.f2{background:var(--f2)}
+.kbd.color .key.f3{background:var(--f3)} .kbd.color .key.f4{background:var(--f4)} .kbd.color .key.f6{background:var(--f6)}
+.kbd.color .key.f7{background:var(--f2)} .kbd.color .key.f8{background:var(--f1)} .kbd.color .key.f9{background:var(--f0)}
+.key.home::after{content:"";position:absolute;bottom:7px;width:12px;height:2px;border-radius:1px;background:currentColor;opacity:.6}
+.kbd .key.next{background:var(--accent)!important;color:var(--accent-ink);border-color:var(--accent)}
+.kbd .key.next .up{color:var(--accent-ink)}
+.key.pressed{transform:translateY(2px)}
+.kbd .key.badpress{background:var(--bad)!important;color:#fff}
+@media (max-width:640px){.key{height:36px;font-size:12px}.key .up{display:none}}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+
+textarea{width:100%;min-height:180px;resize:vertical;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:14px}
+.chip small{color:var(--bad);font-family:var(--sans);margin-left:4px}
+.stack{display:flex;flex-direction:column;gap:8px}
+
+#stats{display:flex;flex-direction:column;gap:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.card .l{font-size:12px;color:var(--muted)}
+svg.chart{width:100%;height:auto;display:block}
+svg.chart .grid{stroke:var(--line)}
+svg.chart text{fill:var(--muted);font-size:11px;font-family:var(--sans)}
+svg.chart .line{fill:none;stroke:var(--accent);stroke-width:2}
+svg.chart .avg{fill:none;stroke:var(--fix);stroke-width:2;stroke-dasharray:5 4}
+svg.chart .dot{fill:var(--accent)}
+svg.chart .dot.low{fill:var(--bad)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:14px}
+th{color:var(--muted);font-weight:500}
+
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal .card{max-width:520px;width:100%;padding:24px}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.res .v{font-size:30px}
+.stars{font-size:30px;color:var(--fix);letter-spacing:4px}
+.stars .e{color:var(--line)}
+.mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">Слепая печать</div>
+  <div class="seg" id="langSeg">
+    <button data-lang="ru">Русский</button><button data-lang="en">English</button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-mode="lessons">Уроки</button>
+    <button data-mode="words">Слова</button>
+    <button data-mode="text">Тексты</button>
+    <button data-mode="mistakes">Работа над ошибками</button>
+    <button data-mode="custom">Свой текст</button>
+    <button data-mode="stats">Статистика</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="box" id="modeBox"></div>
+    <div class="box">
+      <h3>Настройки</h3>
+      <label class="chk"><input type="checkbox" data-set="strict"> Останавливаться на ошибке</label>
+      <label class="chk"><input type="checkbox" data-set="remap"> Не зависеть от раскладки ОС (печатать, не переключая язык)</label>
+      <label class="chk"><input type="checkbox" data-set="yo"> Принимать «е» вместо «ё»</label>
+      <label class="chk"><input type="checkbox" data-set="kbd"> Показывать клавиатуру</label>
+      <label class="chk"><input type="checkbox" data-set="color"> Раскрашивать зоны пальцев</label>
+      <label class="chk"><input type="checkbox" data-set="hint"> Подсказывать следующую клавишу</label>
+      <label class="chk"><input type="checkbox" data-set="sound"> Звук при ошибке</label>
+      <div class="rowset">Цель скорости, зн/мин <input type="number" data-set="target" min="30" max="900" step="10"></div>
+      <div class="rowset">Тема
+        <select data-set="theme"><option value="auto">Системная</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <section id="trainer">
+      <div class="exhead">
+        <div><div id="exTitle"></div><div id="exSub"></div></div>
+        <div class="exbtns">
+          <button id="btnRestart" title="Начать это упражнение заново">Заново <kbd>Esc</kbd></button>
+          <button id="btnNew" title="Сгенерировать другое упражнение">Новое <kbd>Shift+Esc</kbd></button>
+        </div>
+      </div>
+      <div class="statsbar">
+        <div class="stat"><div class="v" id="sCpm">0</div><div class="l">зн/мин</div></div>
+        <div class="stat"><div class="v" id="sWpm">0</div><div class="l">слов/мин (WPM)</div></div>
+        <div class="stat"><div class="v" id="sAcc">100%</div><div class="l">точность</div></div>
+        <div class="stat"><div class="v" id="sErr">0</div><div class="l">ошибки</div></div>
+        <div class="stat"><div class="v" id="sTime">0:00</div><div class="l">время</div></div>
+      </div>
+      <div class="progress"><div id="prog"></div></div>
+      <div class="viewport" id="viewport"><div id="text"></div></div>
+      <div class="warn" id="warn"></div>
+      <div class="hint" id="hint"></div>
+      <div class="kbd" id="kbd"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section id="stats" hidden></section>
+  </main>
+</div>
+
+<div class="modal" id="modal" hidden><div class="card" id="modalCard"></div></div>
+
+<script src="texts-ru.js"></script>
+<script src="texts-en.js"></script>
+<script>
+'use strict';
+const STORE_KEY = 'touch-typing-trainer-v1';
+
+/* ---------- Раскладки ---------- */
+const ROW_CODES = [
+  ['Backquote','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal'],
+  ['KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash'],
+  ['KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote'],
+  ['KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash']
+];
+// 0..3 — левая рука (мизинец..указательный), 4 — большие, 6..9 — правая (указательный..мизинец)
+const ROW_FINGERS = [
+  [0,0,1,2,3,3,6,6,7,8,9,9,9],
+  [0,1,2,3,3,6,6,7,8,9,9,9,9],
+  [0,1,2,3,3,6,6,7,8,9,9],
+  [0,1,2,3,3,6,6,7,8,9]
+];
+const LAYOUTS = {
+  en: { lower: ['`1234567890-=', 'qwertyuiop[]\\', "asdfghjkl;'", 'zxcvbnm,./'],
+        upper: ['~!@#$%^&*()_+', 'QWERTYUIOP{}|', 'ASDFGHJKL:"', 'ZXCVBNM<>?'] },
+  ru: { lower: ['ё1234567890-=', 'йцукенгшщзхъ\\', 'фывапролджэ', 'ячсмитьбю.'],
+        upper: ['Ё!"№;%:?*()_+', 'ЙЦУКЕНГШЩЗХЪ/', 'ФЫВАПРОЛДЖЭ', 'ЯЧСМИТЬБЮ,'] }
+};
+const FINGER_NAMES = ['левый мизинец','левый безымянный','левый средний','левый указательный','большой палец',
+  'большой палец','правый указательный','правый средний','правый безымянный','правый мизинец'];
+
+const KB = {};
+for (const lang of ['ru','en']) {
+  const L = LAYOUTS[lang], codeMap = {}, info = {' ': {code:'Space', shift:false, finger:4}};
+  ROW_CODES.forEach((row, r) => row.forEach((code, c) => {
+    const lo = L.lower[r][c], up = L.upper[r][c], f = ROW_FINGERS[r][c];
+    codeMap[code] = [lo, up];
+    if (!(lo in info)) info[lo] = {code, shift:false, finger:f};
+    if (!(up in info)) info[up] = {code, shift:true, finger:f};
+  }));
+  KB[lang] = {codeMap, info};
+}
+
+/* ---------- Уроки ---------- */
+const LESSONS = {
+  ru: [
+    {add:'ао', t:'Указательные пальцы: А и О'},
+    {add:'вл', t:'Средние пальцы: В и Л'},
+    {add:'ыд', t:'Безымянные пальцы: Ы и Д'},
+    {add:'фж', t:'Мизинцы: Ф и Ж'},
+    {add:'пр', t:'Указательные внутрь: П и Р'},
+    {add:'э',  t:'Правый мизинец: Э'},
+    {add:'ен', t:'Верхний ряд: Е и Н'},
+    {add:'кг', t:'Верхний ряд: К и Г'},
+    {add:'уш', t:'Верхний ряд: У и Ш'},
+    {add:'цщ', t:'Верхний ряд: Ц и Щ'},
+    {add:'йз', t:'Верхний ряд: Й и З'},
+    {add:'хъ', t:'Верхний ряд: Х и Ъ'},
+    {add:'мт', t:'Нижний ряд: М и Т'},
+    {add:'иь', t:'Нижний ряд: И и Ь'},
+    {add:'сб', t:'Нижний ряд: С и Б'},
+    {add:'чю', t:'Нижний ряд: Ч и Ю'},
+    {add:'я',  t:'Нижний ряд: Я'},
+    {add:'ё',  t:'Буква Ё'},
+    {add:'.,', t:'Точка и запятая'},
+    {add:'-',  t:'Дефис'},
+    {kind:'caps',   t:'Заглавные буквы (Shift)'},
+    {kind:'digits', t:'Цифровой ряд'},
+    {kind:'review', t:'Повторение: всё вместе'}
+  ],
+  en: [
+    {add:'fj', t:'Index fingers: F and J'},
+    {add:'dk', t:'Middle fingers: D and K'},
+    {add:'sl', t:'Ring fingers: S and L'},
+    {add:'a;', t:'Little fingers: A and ;'},
+    {add:'gh', t:'Index inward: G and H'},
+    {add:'ei', t:'Top row: E and I'},
+    {add:'ru', t:'Top row: R and U'},
+    {add:'ty', t:'Top row: T and Y'},
+    {add:'wo', t:'Top row: W and O'},
+    {add:'qp', t:'Top row: Q and P'},
+    {add:'vm', t:'Bottom row: V and M'},
+    {add:'c,', t:'Bottom row: C and ,'},
+    {add:'x.', t:'Bottom row: X and .'},
+    {add:'z/', t:'Bottom row: Z and /'},
+    {add:'bn', t:'Bottom row: B and N'},
+    {add:"'-", t:'Apostrophe and hyphen'},
+    {kind:'caps',   t:'Capital letters (Shift)'},
+    {kind:'digits', t:'Number row'},
+    {kind:'review', t:'Review: everything'}
+  ]
+};
+
+/* ---------- Словари ---------- */
+const RU_WORDS = `и в не на я он с что а по это она этот к но они мы как из у который то за свой весь год от так о для ты же все тот
+мочь вы человек такой его сказать только или себя один уже до время если сам когда другой вот говорить наш мой знать стать при чтобы
+дело жизнь кто первый очень два день новый рука даже раз где там под можно ну какой после работа без самый потом надо хотеть ли слово
+идти большой должен место иметь сейчас тут лицо каждый друг нет теперь ни глаз тоже тогда видеть вопрос через да здесь дом почему сторона
+думать сделать страна жить чем мир последний случай голова более делать смотреть ребенок просто конечно сила конец перед несколько
+сидеть понимать город вода земля машина правда право дверь окно стол книга школа утро вечер ночь неделя месяц минута час улица дорога
+поле лес река море небо солнце ветер снег дождь огонь воздух свет звук цвет голос имя отец мать брат сестра семья сын дочь муж жена
+девушка парень старый молодой хороший плохой белый черный красный зеленый синий высокий низкий длинный короткий быстрый медленный
+легкий тяжелый простой сложный важный главный нужный готовый живой полный пустой теплый холодный горячий сухой мокрый сильный слабый
+умный добрый злой веселый тихий громкий ясный темный светлый далекий близкий ранний поздний новость история память мысль идея ответ
+задача решение начало середина результат проект система процесс работать читать писать играть слушать стоять лежать ходить бежать
+лететь плыть ехать нести брать дать давать класть ставить открыть закрыть начать кончить помочь любить ждать искать найти забыть
+помнить учить знание наука язык текст строка буква клавиша палец печать скорость точность ошибка урок практика привычка внимание
+тишина порядок пример модель число цифра сумма часть кусок угол край центр верх низ вперед назад рядом вместе всегда никогда иногда
+часто редко быстро медленно громко тихо хорошо плохо легко трудно сразу снова опять почти совсем именно около между среди вокруг
+против кроме вдоль внутри завтра вчера сегодня летом зимой весной осенью утром вечером ночью кот собака птица рыба лошадь корова
+волк лиса медведь заяц мышь дерево цветок трава лист ветка корень камень песок гора холм остров берег мост поезд самолет корабль
+лодка автобус телефон компьютер экран программа файл папка сеть данные сигнал схема прибор датчик насос котел труба давление
+температура энергия мощность ток напряжение двигатель турбина клапан расчет график таблица отчет план цель путь шаг способ метод
+средство условие причина вывод основа форма образ пора лапа папа мама рама рамка полка ложка вилка чашка тарелка хлеб молоко сыр
+масло соль сахар чай кофе суп мясо каша яблоко груша слива вишня ягода гриб орех овощ морковь лук капуста вал вол лад дал дала дало
+воды вола лава лавы вдова одна овал жало ложа жажда ждал ждала фол дар жар пар пожар двор вор провод провал оправа радар пол полдень
+холод ладонь ладья подвал пароход проза роза рожа лопата долото довод довод зона звон крона корона нора гора горе пена пенал лето
+нота роль доля воля поле море горы пора рано поздно пороло парад привет пока спасибо работа дела новое окно вода жара варенье
+ёж лёд клён всё ещё её пёс тёплый зелёный мёд берёза ёлка звёзды чёрный лёгкий`;
+
+const EN_WORDS = `the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one
+all would there their what so up out if about who get which go me when make can like time no just him know take people into year your
+good some could them see other than then now look only come its over think also back after use two how our work first well way even new
+want because any these give day most us is was are were been has had did said made went find tell ask seem feel try leave call keep let
+begin show hear play run move live believe hold bring happen write provide sit stand lose pay meet include continue set learn change
+lead understand watch follow stop create speak read allow add spend grow open walk win offer remember love consider appear buy wait serve
+send expect build stay fall cut reach remain suggest raise pass sell require decide pull house home world life hand part child eye woman
+man place week case point number group problem fact water room mother area money story month lot right study book job word business issue
+side kind head service friend father power hour game line end member law car city name team minute idea kid body information parent face
+others level office door health person art history party result morning reason research girl guy moment air teacher force education foot
+boy age policy process music market sense nation plan college interest experience effect class control field development role effort
+rate heart leader light voice police mind price report decision son view relationship town road arm difference value building action
+model season society director position player record paper space ground form event official matter center couple site project activity
+star table need court oil situation cost industry figure street image phone data picture practice piece land product doctor wall worker
+news test movie north support technology step baby computer type attention film tree source organization hair window evidence population
+truth song energy fish key keyboard finger speed accuracy error lesson letter quick brown fox jumps lazy dog small large big little old
+young long short high low early late hard easy simple clear dark bright warm cold hot dry wet strong weak happy sad quiet loud fast slow
+ready full empty real true free sure whole able best better great important public bad same different local social national possible
+major black white red green blue always never often sometimes usually again already still soon today tomorrow yesterday here everywhere
+together almost quite really very maybe perhaps however while during before between under above through across against without within
+around river sea sky sun wind rain snow fire stone sand mountain hill island bridge train plane ship boat bus screen program file folder
+network signal sensor pump boiler pipe pressure temperature current voltage engine turbine valve chart goal path method bread milk cheese
+butter salt sugar tea coffee soup meat apple pear plum cherry berry nut onion cabbage cat bird horse cow wolf bear rabbit mouse flower
+grass leaf branch root dad lad ask flask glass hall fall salad alfalfa lass sad fad all add dull skill kid dish fish fresh shelf jade
+jail lake leak deal heal seal sail said idea side slide glide field shield desk disk silk fill hill kill mill gift life like hike`;
+
+const uniq = a => [...new Set(a)];
+const DICT = {
+  ru: uniq(RU_WORDS.split(/\s+/).filter(Boolean)),
+  en: uniq(EN_WORDS.split(/\s+/).filter(Boolean))
+};
+
+/* ---------- Тексты ---------- */
+const TEXTS = {
+  ru: [
+    'Слепая печать экономит время и силы. Когда пальцы сами знают, где находится каждая клавиша, взгляд остается на экране, а мысль не теряется между словами. Главное здесь не скорость, а точность: скорость придет сама.',
+    'Утром над рекой стоял густой туман. Рыбаки молча готовили лодки, а на другом берегу медленно просыпалась деревня. Где-то лаяла собака, скрипели ворота, и над крышами поднимался первый дым.',
+    'Инженер открыл схему и долго смотрел на линии трубопроводов. Давление в контуре росло слишком быстро, хотя насос работал в обычном режиме. Причину нужно было найти до того, как сработает защита.',
+    'Хорошая привычка формируется не за один день. Каждое занятие оставляет небольшой след, и через несколько недель эти следы складываются в уверенный навык. Поэтому лучше заниматься понемногу, но регулярно.',
+    'Осенний лес полон звуков. Под ногами шуршат листья, в ветвях перекликаются птицы, а ветер приносит запах дождя и грибов. В такие дни хочется идти без цели и просто смотреть по сторонам.',
+    'Поезд прибыл на станцию с опозданием на двадцать минут. Пассажиры торопливо выходили на платформу, искали встречающих и проверяли телефоны. Только старик с большой сумкой никуда не спешил.',
+    'Чтобы печатать быстро, держите кисти расслабленными и не опускайте запястья на стол. Указательные пальцы лежат на буквах А и О, остальные пальцы занимают соседние клавиши. После каждого нажатия возвращайте пальцы в исходную позицию.',
+    'Вечером в маленьком кафе на углу было тепло и шумно. За соседним столиком спорили студенты, официант разносил чай с лимоном, а за окном падал первый снег, мягкий и тихий.',
+    'Программа работала без ошибок ровно до тех пор, пока в нее не загрузили настоящие данные. Тогда выяснилось, что таблица содержит пустые строки, даты записаны в трех разных форматах, а половина чисел хранится как текст.',
+    'Ещё вчера казалось, что зима далеко, но сегодня всё изменилось: ветер стал холоднее, лужи затянуло тонким льдом, а на ёлках у дома появился иней.',
+    'Совещание начнется в 9:30 и продлится около 40 минут. В отчете 12 страниц, 5 таблиц и 3 графика. Бюджет проекта вырос на 15% по сравнению с прошлым годом (и это еще не предел).',
+    'Ветер гнал по небу низкие серые облака. Старый маяк на скале давно не работал, но местные жители по привычке поглядывали на него каждый вечер, словно ждали, что однажды он снова загорится.'
+  ],
+  en: [
+    'Touch typing saves time and energy. When your fingers know where every key is, your eyes stay on the screen and your thoughts do not get lost between words. Focus on accuracy first; speed will follow.',
+    'The morning fog lay thick over the river. Fishermen quietly prepared their boats, while on the far bank the village slowly woke up. Somewhere a dog barked, a gate creaked, and the first smoke rose above the roofs.',
+    'The engineer opened the diagram and studied the pipelines for a long time. Pressure in the loop was rising too fast, even though the pump was running normally. The cause had to be found before the protection tripped.',
+    'A good habit is not built in a single day. Every session leaves a small mark, and after a few weeks those marks add up to a confident skill. That is why it is better to practice a little, but every day.',
+    'Keep your wrists relaxed and do not rest them on the desk. Your index fingers sit on F and J, and the other fingers rest on the neighboring keys. After each keystroke, return your fingers to the home row.',
+    'The train arrived at the station twenty minutes late. Passengers hurried onto the platform, looking for friends and checking their phones. Only an old man with a large bag was in no hurry at all.',
+    'The program worked perfectly until someone loaded real data into it. Then it turned out that the table had empty rows, dates were written in three different formats, and half of the numbers were stored as text.',
+    'It was warm and noisy in the small cafe on the corner. Students argued at the next table, a waiter carried cups of tea with lemon, and outside the window the first snow was falling, soft and quiet.',
+    'The quick brown fox jumps over the lazy dog. This sentence contains every letter of the English alphabet, which is why typists have used it for more than a hundred years to test their machines.',
+    'Numbers matter too: the meeting starts at 9:30, the report has 12 pages, and the budget grew by 15% in 2025. Write them carefully (and check twice)!',
+    "It's easy to rush, but don't. Each mistake you make costs more time than typing slowly and correctly. Let your hands find the rhythm, and the speed will come on its own.",
+    'Low gray clouds moved across the sky. The old lighthouse on the cliff had not worked for years, yet the locals still glanced at it every evening, as if waiting for it to shine again.'
+  ]
+};
+
+/* ---------- Классика (texts-ru.js / texts-en.js) ---------- */
+const LIB = {ru: window.CLASSICS_RU || [], en: window.CLASSICS_EN || []};
+const workId = w => w.a + '|' + w.t;
+
+/* ---------- Хранилище ---------- */
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+}
+let saveTimer = null;
+function saveDB() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e) {} }, 200);
+}
+const DB = Object.assign({settings:{}, progress:{}, keys:{}, history:[]}, loadDB());
+for (const l of ['ru','en']) { DB.progress[l] = DB.progress[l] || {}; DB.keys[l] = DB.keys[l] || {}; }
+const S = Object.assign({
+  lang:'ru', mode:'lessons', lesson:{ru:0, en:0}, strict:true, remap:true, yo:false, kbd:true, color:true,
+  hint:true, sound:false, target:150, words:40, theme:'auto', customText:'', textSrc:{ru:'random', en:'random'}, bookPos:{ru:{}, en:{}}
+}, DB.settings);
+DB.settings = S;
+S.textSrc = Object.assign({ru:'random', en:'random'}, S.textSrc);
+S.bookPos = Object.assign({ru:{}, en:{}}, S.bookPos);
+
+/* ---------- Утилиты ---------- */
+const $ = s => document.querySelector(s);
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const isLetter = c => /\p{L}/u.test(c);
+const cap = w => w.charAt(0).toUpperCase() + w.slice(1);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtTime = sec => { sec = Math.floor(sec); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+const dispChar = c => c === ' ' ? 'пробел' : c;
+const MODE_NAMES = {lessons:'Урок', words:'Слова', text:'Текст', mistakes:'Ошибки', custom:'Свой текст'};
+
+/* ---------- Генераторы упражнений ---------- */
+function lessonAllowed(lang, idx) {
+  const set = new Set();
+  LESSONS[lang].slice(0, idx + 1).forEach(l => { for (const c of (l.add || '')) set.add(c); });
+  return set;
+}
+function pseudo(letters, fresh) {
+  const n = 2 + rnd(4), a = [];
+  for (let i = 0; i < n; i++) a.push(fresh.length && Math.random() < 0.4 ? pick(fresh) : pick(letters));
+  return a.join('');
+}
+function attachPunct(t, p, pool, letters, fresh) {
+  if (p === '-') return t + '-' + (pool.length >= 5 ? pick(pool) : pseudo(letters, fresh));
+  if (p === "'") return t + "'s";
+  return t + p;
+}
+function genLesson(lang, idx, target = 230) {
+  const les = LESSONS[lang][idx];
+  const allowed = lessonAllowed(lang, idx);
+  const letters = [...allowed].filter(isLetter);
+  const punct = [...allowed].filter(c => !isLetter(c));
+  const pool = DICT[lang].filter(w => w.length > 1 && [...w].every(c => allowed.has(c)));
+  if (les.kind === 'caps') return sentences(lang, pool, target, {caps:true});
+  if (les.kind === 'digits') return digitsText(pool, target);
+  if (les.kind === 'review') return sentences(lang, pool, target, {punct:true});
+
+  const fresh = [...les.add];
+  const freshL = fresh.filter(isLetter), freshP = fresh.filter(c => !isLetter(c));
+  const freshPool = freshL.length ? pool.filter(w => freshL.some(c => w.includes(c))) : pool;
+  const out = []; let len = 0;
+  const push = t => { out.push(t); len += t.length + 1; };
+
+  // разминка новыми клавишами
+  for (let i = 0; i < 6; i++) {
+    if (freshL.length) {
+      const n = 3 + rnd(3); let s = '';
+      for (let j = 0; j < n; j++) s += (Math.random() < 0.7 || letters.length < 3) ? pick(freshL) : pick(letters);
+      push(s);
+    } else {
+      push(attachPunct(pool.length ? pick(pool) : pseudo(letters, []), pick(freshP), pool, letters, []));
+    }
+  }
+  const pProb = freshP.length ? 0.35 : 0.15;
+  while (len < target) {
+    const r = Math.random(); let t;
+    if (freshPool.length >= 4 && r < 0.4) t = pick(freshPool);
+    else if (pool.length >= 12 && r < 0.7) t = pick(pool);
+    else t = pseudo(letters, freshL);
+    if (punct.length && Math.random() < pProb) {
+      const p = freshP.length && Math.random() < 0.6 ? pick(freshP) : pick(punct);
+      t = attachPunct(t, p, pool, letters, freshL);
+    }
+    push(t);
+  }
+  return out.join(' ');
+}
+function sentences(lang, pool, target, opt = {}) {
+  const words = pool.length >= 30 ? pool : DICT[lang];
+  const out = []; let len = 0;
+  while (len < target) {
+    const n = 4 + rnd(6), s = [];
+    for (let i = 0; i < n; i++) s.push(pick(words));
+    if (opt.caps) for (let i = 1; i < n; i++) if (Math.random() < 0.15) s[i] = cap(s[i]);
+    if (opt.punct && n > 5 && Math.random() < 0.6) { const k = 1 + rnd(n - 2); s[k] += ','; }
+    s[0] = cap(s[0]);
+    const sent = s.join(' ') + (opt.punct ? pick(['.', '.', '.', '!', '?']) : '.');
+    out.push(sent); len += sent.length + 1;
+  }
+  return out.join(' ');
+}
+function digitsText(pool, target) {
+  const out = []; let len = 0;
+  const num = () => { const n = 1 + rnd(4); let s = String(1 + rnd(9)); while (s.length < n) s += rnd(10); return s; };
+  for (let i = 0; i < 5; i++) { let s = ''; for (let j = 0; j < 4; j++) s += rnd(10); out.push(s); len += 5; }
+  while (len < target) {
+    const t = Math.random() < 0.5 ? num() : pick(pool);
+    out.push(t); len += t.length + 1;
+  }
+  return out.join(' ');
+}
+function wordsText(lang, count) {
+  const a = [];
+  for (let i = 0; i < count; i++) {
+    let w; do { w = pick(DICT[lang]); } while (w === a[a.length - 1]);
+    a.push(w);
+  }
+  return a.join(' ');
+}
+let lastTextIdx = -1;
+function randomText(lang) {
+  let i; do { i = rnd(TEXTS[lang].length); } while (i === lastTextIdx && TEXTS[lang].length > 1);
+  lastTextIdx = i;
+  return TEXTS[lang][i];
+}
+function weakChars(lang, k = 8) {
+  return Object.entries(DB.keys[lang])
+    .filter(([c, v]) => c !== ' ' && v.n >= 5 && v.e > 0)
+    .map(([c, v]) => ({c, n:v.n, e:v.e, rate:v.e / v.n}))
+    .sort((a, b) => b.rate - a.rate || b.e - a.e)
+    .slice(0, k);
+}
+function mistakesText(lang, target = 260) {
+  const weak = uniq(weakChars(lang).map(o => o.c.toLowerCase()));
+  const wl = weak.filter(isLetter), wp = weak.filter(c => !isLetter(c));
+  if (!weak.length) return null;
+  const pool = wl.length ? DICT[lang].filter(w => wl.some(c => w.includes(c))) : DICT[lang];
+  const letters = [...new Set(DICT[lang].join(''))].filter(isLetter);
+  const out = []; let len = 0;
+  while (len < target) {
+    let t;
+    if (wl.length && Math.random() < 0.25) {
+      t = ''; const n = 3 + rnd(2);
+      for (let i = 0; i < n; i++) t += Math.random() < 0.6 ? pick(wl) : pick(letters);
+    } else t = pick(pool);
+    if (wp.length && Math.random() < 0.3) t += pick(wp);
+    out.push(t); len += t.length + 1;
+  }
+  return out.join(' ');
+}
+function normalizeText(s, lang) {
+  s = s.replace(/[«»„“”]/g, '"').replace(/[‘’]/g, "'").replace(/[—–−]/g, '-').replace(/…/g, '...')
+       .replace(/\s+/g, ' ').trim();
+  const info = KB[lang].info; let removed = 0;
+  s = [...s].filter(c => { if (info[c]) return true; removed++; return false; }).join('').replace(/ {2,}/g, ' ').trim();
+  return {s, removed};
+}
+
+/* ---------- Состояние упражнения ---------- */
+let ex = null;
+let kmap = {};
+
+function newExercise() {
+  closeModal();
+  let text = null, title = '', sub = '', meta = {};
+  const lang = S.lang;
+  if (S.mode === 'lessons') {
+    const i = Math.min(S.lesson[lang], LESSONS[lang].length - 1);
+    const les = LESSONS[lang][i];
+    text = genLesson(lang, i);
+    title = `Урок ${i + 1}. ${les.t}`;
+    sub = les.add ? `Новые клавиши: ${[...les.add].join(' ')}` : 'Используются все изученные клавиши';
+  } else if (S.mode === 'words') {
+    text = wordsText(lang, S.words);
+    title = `Частые слова: ${S.words}`;
+    sub = 'Случайный набор из словаря';
+  } else if (S.mode === 'text') {
+    const src = textSource(lang);
+    text = src.text; title = src.title; sub = src.sub; meta = src.meta;
+  } else if (S.mode === 'mistakes') {
+    text = mistakesText(lang);
+    title = 'Работа над ошибками';
+    sub = text ? 'Слова с буквами, где вы чаще всего ошибаетесь' : '';
+  } else if (S.mode === 'custom') {
+    text = S.customText ? normalizeText(S.customText, lang).s : '';
+    title = 'Свой текст';
+    sub = '';
+  }
+  $('#exTitle').textContent = title;
+  $('#exSub').textContent = sub;
+  if (!text) {
+    ex = null;
+    const msg = S.mode === 'mistakes'
+      ? 'Пока недостаточно данных об ошибках. Пройдите несколько упражнений в других режимах — здесь появятся слова с проблемными буквами.'
+      : 'Вставьте текст в поле слева и нажмите «Начать».';
+    $('#text').innerHTML = `<div class="placeholder">${msg}</div>`;
+    $('#text').style.transform = '';
+    $('#hint').textContent = '';
+    resetStatsView();
+    highlightNext();
+    return;
+  }
+  startExercise(text, meta);
+}
+
+function startExercise(text, meta = {}) {
+  const chars = [...text];
+  ex = {text, chars, pos:0, correct:0, keystrokes:0, errors:0, start:0, end:0,
+        errAt:new Set(), typed:[], errChars:{}, strict:S.strict, mode:S.mode, lang:S.lang,
+        lesson:S.mode === 'lessons' ? S.lesson[S.lang] : null, book:meta.book || null, bookIdx:meta.idx};
+  renderText();
+  resetStatsView();
+  updateCursor();
+}
+function restart() { if (ex) startExercise(ex.text, {book:ex.book, idx:ex.bookIdx}); else newExercise(); }
+// «Новое упражнение»: в режиме чтения книги — перейти к следующему отрывку
+function skipExercise() {
+  if (ex && ex.book && !ex.end) advanceBook(ex.lang, ex.book, 1);
+  newExercise();
+}
+
+function textSource(lang) {
+  const lib = LIB[lang], sel = S.textSrc[lang] || 'random';
+  if (sel === 'short' || !lib.length)
+    return {text:randomText(lang), title:'Короткий текст', sub:'Заглавные буквы, знаки препинания, цифры', meta:{}};
+  let w = sel === 'random' ? null : lib.find(x => workId(x) === sel);
+  if (!w) {
+    w = pick(lib); const i = rnd(w.p.length);
+    return {text:w.p[i], title:`${w.a} — ${w.t}`, sub:`Случайный отрывок (${i + 1} из ${w.p.length})`, meta:{}};
+  }
+  const id = workId(w), i = Math.min(S.bookPos[lang][id] || 0, w.p.length - 1);
+  return {text:w.p[i], title:`${w.a} — ${w.t}`, sub:`Отрывок ${i + 1} из ${w.p.length} · ${Math.floor(i / w.p.length * 100)}% книги`, meta:{book:id, idx:i}};
+}
+function advanceBook(lang, id, delta, from) {
+  const w = LIB[lang].find(x => workId(x) === id); if (!w) return;
+  let i = (from != null ? from : (S.bookPos[lang][id] || 0)) + delta;
+  if (i >= w.p.length) i = 0;
+  S.bookPos[lang][id] = Math.max(0, i);
+  saveDB();
+  if (S.mode === 'text') renderSide();
+}
+
+function renderText() {
+  const inner = $('#text');
+  inner.innerHTML = '';
+  inner.style.transform = '';
+  ex.els = [];
+  const frag = document.createDocumentFragment();
+  let w = null;
+  for (const ch of ex.chars) {
+    if (!w) { w = document.createElement('span'); w.className = 'w'; frag.appendChild(w); }
+    const s = document.createElement('span');
+    s.className = ch === ' ' ? 'c sp' : 'c';
+    s.textContent = ch;
+    w.appendChild(s); ex.els.push(s);
+    if (ch === ' ') w = null;
+  }
+  inner.appendChild(frag);
+  const vp = $('#viewport');
+  const lh = parseFloat(getComputedStyle(vp).lineHeight) || 47;
+  vp.style.height = (lh * 3) + 'px';
+  ex.lineH = lh;
+}
+
+function updateCursor() {
+  if (!ex) return;
+  const prev = ex.curEl;
+  if (prev) prev.classList.remove('cur', 'err');
+  const el = ex.els[ex.pos];
+  if (el) {
+    el.classList.add('cur');
+    ex.curEl = el;
+    const top0 = ex.els[0].offsetTop;
+    const shift = el.offsetTop - top0;
+    $('#text').style.transform = `translateY(${-Math.max(0, shift - ex.lineH)}px)`;
+  }
+  $('#prog').style.width = (ex.pos / ex.chars.length * 100) + '%';
+  highlightNext();
+}
+
+/* ---------- Ввод ---------- */
+function eventChar(e) {
+  if (S.remap) {
+    if (e.code === 'Space') return ' ';
+    const m = KB[S.lang].codeMap[e.code];
+    if (m) {
+      let up = e.shiftKey;
+      if (e.getModifierState && e.getModifierState('CapsLock') && isLetter(m[0])) up = !up;
+      return up ? m[1] : m[0];
+    }
+  }
+  return e.key && e.key.length === 1 ? e.key : null;
+}
+function wrongLayout(ch) {
+  if (S.remap) return false;
+  return S.lang === 'ru' ? /[a-z]/i.test(ch) : /[а-яё]/i.test(ch);
+}
+let warnTimer = null;
+function warn(msg) {
+  $('#warn').textContent = msg;
+  clearTimeout(warnTimer);
+  if (msg) warnTimer = setTimeout(() => { $('#warn').textContent = ''; }, 2500);
+}
+
+function onKey(e) {
+  if (!$('#modal').hidden) { modalKey(e); return; }
+  const t = e.target;
+  if (t && t.closest && t.closest('textarea, input[type=number], select')) {
+    if (e.key === 'Escape') t.blur();
+    return;
+  }
+  if (S.mode === 'stats') return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (e.shiftKey) skipExercise(); else restart();
+    return;
+  }
+  if (!ex || ex.end) return;
+  if (e.key === 'Backspace') { e.preventDefault(); if (!ex.strict) backspace(); return; }
+  if (e.key === 'Tab' || e.key === 'Enter') { e.preventDefault(); return; }
+  if (e.repeat) { e.preventDefault(); return; }
+  const caps = e.getModifierState && e.getModifierState('CapsLock');
+  const ch = eventChar(e);
+  if (ch == null) return;
+  e.preventDefault();
+  if (wrongLayout(ch)) { warn(`Переключите раскладку на ${S.lang === 'ru' ? 'русскую' : 'английскую'} — или включите «Не зависеть от раскладки ОС».`); return; }
+  if (caps) warn('Включён Caps Lock — используйте Shift для заглавных.');
+  typeChar(ch, e.code);
+}
+
+function matches(exp, ch) {
+  if (ch === exp) return true;
+  if (S.yo && ((exp === 'ё' && ch === 'е') || (exp === 'Ё' && ch === 'Е'))) return true;
+  return false;
+}
+function keyStat(c) {
+  const st = DB.keys[ex.lang];
+  return st[c] || (st[c] = {n:0, e:0});
+}
+
+function typeChar(ch, code) {
+  if (!ex.start) ex.start = performance.now();
+  const exp = ex.chars[ex.pos], el = ex.els[ex.pos];
+  const ok = matches(exp, ch);
+  ex.keystrokes++;
+  flashKey(code, ok);
+  if (!ok) {
+    ex.errors++;
+    if (!ex.errAt.has(ex.pos)) { keyStat(exp).e++; ex.errChars[exp] = (ex.errChars[exp] || 0) + 1; }
+    ex.errAt.add(ex.pos);
+    beep();
+  }
+  if (ex.strict) {
+    if (ok) {
+      keyStat(exp).n++;
+      el.classList.remove('err');
+      el.classList.add(ex.errAt.has(ex.pos) ? 'fixed' : 'ok');
+      ex.pos++; ex.correct++;
+    } else {
+      el.classList.remove('err'); void el.offsetWidth; el.classList.add('err');
+      const vp = $('#viewport'); vp.classList.remove('shake'); void vp.offsetWidth; vp.classList.add('shake');
+      updateStats();
+      return;
+    }
+  } else {
+    keyStat(exp).n++;
+    ex.typed[ex.pos] = ch;
+    el.classList.add(ok ? 'ok' : 'bad');
+    if (ok) ex.correct++;
+    ex.pos++;
+  }
+  if (ex.pos >= ex.chars.length) finish();
+  else { updateCursor(); updateStats(); }
+}
+
+function backspace() {
+  if (ex.pos === 0) return;
+  ex.pos--;
+  const el = ex.els[ex.pos];
+  if (matches(ex.chars[ex.pos], ex.typed[ex.pos])) ex.correct--;
+  ex.typed[ex.pos] = undefined;
+  el.classList.remove('ok', 'bad');
+  updateCursor(); updateStats();
+}
+
+/* ---------- Статистика упражнения ---------- */
+function calc() {
+  const now = ex.end || performance.now();
+  const sec = ex.start ? (now - ex.start) / 1000 : 0;
+  const cpm = sec > 0.5 ? ex.correct / sec * 60 : 0;
+  const acc = ex.keystrokes ? (ex.keystrokes - ex.errors) / ex.keystrokes * 100 : 100;
+  return {sec, cpm, wpm:cpm / 5, acc};
+}
+function updateStats() {
+  if (!ex) return resetStatsView();
+  const r = calc();
+  $('#sCpm').textContent = Math.round(r.cpm);
+  $('#sWpm').textContent = Math.round(r.wpm);
+  $('#sAcc').textContent = (r.acc >= 99.95 ? 100 : r.acc.toFixed(1)) + '%';
+  $('#sErr').textContent = ex.errors;
+  $('#sTime').textContent = fmtTime(r.sec);
+}
+function resetStatsView() {
+  $('#sCpm').textContent = 0; $('#sWpm').textContent = 0; $('#sAcc').textContent = '100%';
+  $('#sErr').textContent = 0; $('#sTime').textContent = '0:00'; $('#prog').style.width = 0;
+}
+setInterval(() => { if (ex && ex.start && !ex.end) updateStats(); }, 250);
+
+function starsFor(cpm, acc) {
+  if (acc < 90) return 0;
+  if (acc >= 97 && cpm >= S.target) return 3;
+  if (acc >= 95) return 2;
+  return 1;
+}
+function starsHtml(n) { return '★'.repeat(n) + `<span class="e">${'★'.repeat(3 - n)}</span>`; }
+
+function finish() {
+  ex.end = performance.now();
+  if (ex.curEl) ex.curEl.classList.remove('cur', 'err');
+  $('#prog').style.width = '100%';
+  highlightNext();
+  updateStats();
+  const r = calc();
+  const rec = {t:Date.now(), lang:ex.lang, mode:ex.mode, cpm:Math.round(r.cpm), acc:+r.acc.toFixed(1),
+               err:ex.errors, len:ex.chars.length, sec:Math.round(r.sec)};
+  if (ex.mode === 'lessons') rec.lesson = ex.lesson;
+  if (ex.book) { rec.book = ex.book.replace('|', ' — '); advanceBook(ex.lang, ex.book, 1, ex.bookIdx); }
+  DB.history.push(rec);
+  if (DB.history.length > 1000) DB.history.splice(0, DB.history.length - 1000);
+  let stars = null;
+  if (ex.mode === 'lessons') {
+    stars = starsFor(r.cpm, r.acc);
+    const p = DB.progress[ex.lang][ex.lesson];
+    if (!p || stars > p.stars || (stars === p.stars && rec.cpm > p.cpm))
+      DB.progress[ex.lang][ex.lesson] = {stars, cpm:rec.cpm, acc:rec.acc};
+    renderSide();
+  }
+  saveDB();
+  showResult(rec, stars);
+}
+
+/* ---------- Окно результата ---------- */
+let modalNext = null;
+function showResult(rec, stars) {
+  const prev = DB.history.filter(h => h.lang === rec.lang && h !== rec).slice(-10);
+  const avg = prev.length ? Math.round(prev.reduce((s, h) => s + h.cpm, 0) / prev.length) : null;
+  const errs = Object.entries(ex.errChars).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  let nextLabel = 'Следующее упражнение';
+  modalNext = () => newExercise();
+  if (ex.mode === 'lessons') {
+    const last = LESSONS[ex.lang].length - 1;
+    if (stars >= 2 && ex.lesson < last) {
+      nextLabel = 'Следующий урок';
+      modalNext = () => { S.lesson[S.lang] = ex.lesson + 1; saveDB(); renderSide(); newExercise(); };
+    } else if (stars < 2) nextLabel = 'Ещё раз этот урок';
+  }
+  if (ex.book) nextLabel = (S.bookPos[ex.lang][ex.book] || 0) === 0 ? 'Книга дочитана — в начало' : 'Следующий отрывок';
+  let html = '';
+  if (stars != null) {
+    const tip = stars >= 2 ? (stars === 3 ? 'Отлично!' : `Урок пройден. Для третьей звезды: точность ≥ 97% и скорость ≥ ${S.target} зн/мин.`)
+                           : 'Для перехода к следующему уроку нужна точность не ниже 95%.';
+    html += `<div class="stars">${starsHtml(stars)}</div><div class="muted">${tip}</div>`;
+  } else {
+    html += `<h2 style="margin:0">Готово</h2>`;
+  }
+  html += `<div class="res">
+    <div><div class="v">${rec.cpm}</div><div class="l muted">зн/мин · ${Math.round(rec.cpm / 5)} WPM</div></div>
+    <div><div class="v">${rec.acc}%</div><div class="l muted">точность</div></div>
+    <div><div class="v">${fmtTime(rec.sec)}</div><div class="l muted">${rec.err} ошиб.</div></div>
+  </div>`;
+  if (avg != null) {
+    const d = rec.cpm - avg;
+    html += `<div class="muted">Средняя скорость за последние ${prev.length}: ${avg} зн/мин (${d >= 0 ? '+' : ''}${d})</div>`;
+  }
+  if (errs.length) {
+    html += `<div style="margin-top:12px" class="muted">Ошибки на символах:</div><div class="chips" style="margin-top:6px">` +
+      errs.map(([c, n]) => `<span class="chip">${esc(dispChar(c))}<small>×${n}</small></span>`).join('') + `</div>`;
+  }
+  html += `<div class="mbtns">
+    <button id="mRetry">Повторить <kbd>R</kbd></button>
+    <button id="mNext" class="primary">${nextLabel} <kbd>Enter</kbd></button>
+  </div>`;
+  $('#modalCard').innerHTML = html;
+  $('#modal').hidden = false;
+  $('#mRetry').onclick = () => { closeModal(); restart(); };
+  $('#mNext').onclick = () => { closeModal(); modalNext(); };
+}
+function closeModal() { $('#modal').hidden = true; }
+function modalKey(e) {
+  if (e.key === 'Enter' || e.code === 'Space') { e.preventDefault(); closeModal(); modalNext(); }
+  else if (e.code === 'KeyR' || e.key === 'Escape') { e.preventDefault(); closeModal(); restart(); }
+}
+
+/* ---------- Клавиатура ---------- */
+function buildKeyboard(container, lang) {
+  container.innerHTML = '';
+  const map = {}, L = LAYOUTS[lang];
+  const mk = (row, code, grow, cls, html) => {
+    const k = document.createElement('div');
+    k.className = 'key ' + (cls || '');
+    k.style.flexGrow = grow || 1;
+    if (code) { k.dataset.code = code; map[code] = k; }
+    k.innerHTML = html || '';
+    row.appendChild(k);
+    return k;
+  };
+  const charKey = (row, r, c, grow) => {
+    const code = ROW_CODES[r][c], lo = L.lower[r][c], up = L.upper[r][c];
+    const html = isLetter(lo) ? `<span class="lo">${esc(up)}</span>`
+                              : `<span class="up">${esc(up)}</span><span class="lo">${esc(lo)}</span>`;
+    const k = mk(row, code, grow, 'f' + ROW_FINGERS[r][c], html);
+    if (code === 'KeyF' || code === 'KeyJ') k.classList.add('home');
+  };
+  const rows = [];
+  for (let i = 0; i < 5; i++) { const d = document.createElement('div'); d.className = 'krow'; container.appendChild(d); rows.push(d); }
+  for (let c = 0; c < 13; c++) charKey(rows[0], 0, c);
+  mk(rows[0], 'Backspace', 2, 'fn', '⌫');
+  mk(rows[1], 'Tab', 1.5, 'fn', 'Tab');
+  for (let c = 0; c < 13; c++) charKey(rows[1], 1, c, c === 12 ? 1.5 : 1);
+  mk(rows[2], 'CapsLock', 1.8, 'fn', 'Caps');
+  for (let c = 0; c < 11; c++) charKey(rows[2], 2, c);
+  mk(rows[2], 'Enter', 2.2, 'fn', 'Enter');
+  mk(rows[3], 'ShiftLeft', 2.3, 'fn f0', 'Shift');
+  for (let c = 0; c < 10; c++) charKey(rows[3], 3, c);
+  mk(rows[3], 'ShiftRight', 2.7, 'fn f9', 'Shift');
+  mk(rows[4], null, 4, 'spacer');
+  mk(rows[4], 'Space', 6.5, 'fn f4', '');
+  mk(rows[4], null, 4.5, 'spacer');
+  return map;
+}
+function renderKeyboard() {
+  const box = $('#kbd');
+  kmap = buildKeyboard(box, S.lang);
+  box.classList.toggle('color', !!S.color);
+  box.hidden = !S.kbd;
+  const lg = $('#legend');
+  lg.hidden = !S.kbd || !S.color;
+  lg.innerHTML = [['--f0','мизинцы'],['--f1','безымянные'],['--f2','средние'],['--f3','левый указательный'],['--f6','правый указательный'],['--f4','большие']]
+    .map(([v, n]) => `<span style="--c:var(${v})">${n}</span>`).join('');
+  highlightNext();
+}
+let lit = [];
+function highlightNext() {
+  lit.forEach(k => k.classList.remove('next')); lit = [];
+  const hint = $('#hint');
+  if (!ex || ex.end || ex.pos >= ex.chars.length) { hint.textContent = ''; return; }
+  if (!S.hint) { hint.textContent = ''; return; }
+  const ch = ex.chars[ex.pos], inf = KB[S.lang].info[ch];
+  if (!inf) { hint.textContent = ''; return; }
+  const k = kmap[inf.code]; if (k) { k.classList.add('next'); lit.push(k); }
+  let txt = `Далее: <b>${esc(dispChar(ch))}</b> — ${FINGER_NAMES[inf.finger]}`;
+  if (inf.shift) {
+    const right = inf.finger < 5;
+    const sk = kmap[right ? 'ShiftRight' : 'ShiftLeft']; if (sk) { sk.classList.add('next'); lit.push(sk); }
+    txt += ` + Shift ${right ? 'правым' : 'левым'} мизинцем`;
+  }
+  if (!ex.start) txt += ' <span class="muted">· начните печатать, таймер запустится сам</span>';
+  hint.innerHTML = txt;
+}
+function flashKey(code, ok) {
+  const k = kmap[code]; if (!k) return;
+  const cls = ok ? 'pressed' : 'badpress';
+  k.classList.add(cls);
+  setTimeout(() => k.classList.remove(cls), ok ? 90 : 220);
+}
+
+/* ---------- Звук ---------- */
+let actx = null;
+function beep() {
+  if (!S.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'square'; o.frequency.value = 200; g.gain.value = 0.04;
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + 0.07);
+  } catch (e) {}
+}
+
+/* ---------- Боковая панель ---------- */
+function recommendedLesson(lang) {
+  const n = LESSONS[lang].length;
+  for (let i = 0; i < n; i++) { const p = DB.progress[lang][i]; if (!p || p.stars < 2) return i; }
+  return n - 1;
+}
+function renderSide() {
+  const box = $('#modeBox'), lang = S.lang;
+  if (S.mode === 'lessons') {
+    const rec = recommendedLesson(lang);
+    box.innerHTML = `<h3>Уроки · ${lang === 'ru' ? 'ЙЦУКЕН' : 'QWERTY'}</h3><div class="lessons">` +
+      LESSONS[lang].map((l, i) => {
+        const p = DB.progress[lang][i];
+        const keys = l.add ? [...l.add].join(' ') : l.t.split(/[(:]/)[0].trim();
+        return `<button class="lesson${i === S.lesson[lang] ? ' on' : ''}${i === rec ? ' rec' : ''}" data-i="${i}" title="${esc(l.t)}">
+          <span class="n">${i + 1}</span><span class="k">${esc(keys)}</span>
+          <span class="s">${p ? starsHtml(p.stars) + ` <span class="muted">${p.cpm}</span>` : ''}</span></button>`;
+      }).join('') + `</div><div class="muted" style="font-size:12px;margin-top:8px">Урок засчитывается при точности от 95%. Синий номер — рекомендуемый урок.</div>`;
+    box.querySelectorAll('.lesson').forEach(b => b.onclick = () => {
+      S.lesson[lang] = +b.dataset.i; saveDB(); renderSide(); newExercise();
+    });
+    const on = box.querySelector('.lesson.on'); if (on) on.scrollIntoView({block:'nearest'});
+  } else if (S.mode === 'words') {
+    box.innerHTML = `<h3>Частые слова</h3>
+      <div class="rowset">Слов в упражнении <select id="wc">${[15, 25, 40, 60, 100].map(n => `<option${n === S.words ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div class="muted" style="font-size:13px">Словарь: ${DICT[lang].length} слов, только строчные буквы без знаков препинания.</div>`;
+    $('#wc').onchange = e => { S.words = +e.target.value; saveDB(); e.target.blur(); newExercise(); };
+  } else if (S.mode === 'text') {
+    const lib = LIB[lang], sel = S.textSrc[lang] || 'random';
+    const groups = {};
+    lib.forEach(w => (groups[w.a] = groups[w.a] || []).push(w));
+    const opt = (v, label) => `<option value="${esc(v)}"${v === sel ? ' selected' : ''}>${esc(label)}</option>`;
+    let html = `<h3>Тексты</h3><select id="srcSel" style="width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px">` +
+      (lib.length ? opt('random', `Случайный отрывок из классики (${lib.reduce((s, w) => s + w.p.length, 0)})`) : '') +
+      opt('short', `Короткие тексты (${TEXTS[lang].length})`) +
+      Object.entries(groups).map(([a, ws]) => `<optgroup label="${esc(a)}">` + ws.map(w => opt(workId(w), w.t)).join('') + '</optgroup>').join('') +
+      `</select>`;
+    const w = lib.find(x => workId(x) === sel);
+    if (w) {
+      const i = Math.min(S.bookPos[lang][sel] || 0, w.p.length - 1);
+      html += `<div class="rowset" style="margin-top:12px">Отрывок <span><input type="number" id="bookPos" min="1" max="${w.p.length}" value="${i + 1}"> из ${w.p.length}</span></div>
+        <div class="progress" style="margin:6px 0 10px"><div style="height:100%;width:${(i / w.p.length * 100).toFixed(1)}%;background:var(--accent)"></div></div>
+        <div style="display:flex;gap:8px"><button id="bookPrev" style="flex:1">← Назад</button><button id="bookNext" style="flex:1">Вперёд →</button></div>
+        <div class="muted" style="font-size:12px;margin-top:8px">Место в книге запоминается: после каждого отрывка открывается следующий. Объём: ${Math.round(w.p.reduce((s, x) => s + x.length, 0) / 1000)} тыс. знаков.</div>`;
+    } else if (sel === 'random') {
+      html += `<div class="muted" style="font-size:12px;margin-top:8px">${lib.length} произведений. Выберите конкретное, чтобы читать его по порядку. Следующий отрывок — «Новое» или <kbd>Shift+Esc</kbd>.</div>`;
+    } else {
+      html += `<div class="muted" style="font-size:12px;margin-top:8px">Небольшие тексты с заглавными буквами, знаками препинания и цифрами.</div>`;
+    }
+    if (!lib.length) html += `<div class="muted" style="font-size:12px;margin-top:8px">Файл texts-${lang}.js не найден рядом с index.html — доступны только короткие тексты.</div>`;
+    box.innerHTML = html;
+    $('#srcSel').onchange = e => { S.textSrc[lang] = e.target.value; saveDB(); e.target.blur(); renderSide(); newExercise(); };
+    if (w) {
+      const id = workId(w);
+      $('#bookPrev').onclick = () => { advanceBook(lang, id, -1); newExercise(); };
+      $('#bookNext').onclick = () => { advanceBook(lang, id, 1); newExercise(); };
+      $('#bookPos').onchange = e => {
+        S.bookPos[lang][id] = Math.max(0, Math.min(w.p.length - 1, (+e.target.value || 1) - 1));
+        saveDB(); e.target.blur(); renderSide(); newExercise();
+      };
+    }
+  } else if (S.mode === 'mistakes') {
+    const w = weakChars(lang, 12);
+    box.innerHTML = `<h3>Проблемные символы</h3>` + (w.length
+      ? `<div class="chips">${w.map(o => `<span class="chip" title="${o.e} ошибок из ${o.n}">${esc(dispChar(o.c))}<small>${Math.round(o.rate * 100)}%</small></span>`).join('')}</div>
+         <div class="muted" style="font-size:12px;margin-top:8px">Доля ошибок по каждому символу за всё время. Упражнение собирается из слов с этими буквами.</div>`
+      : `<div class="muted" style="font-size:13px">Пока нет данных. Статистика копится во всех режимах.</div>`);
+  } else if (S.mode === 'custom') {
+    box.innerHTML = `<h3>Свой текст</h3><div class="stack">
+      <textarea id="customTa" placeholder="Вставьте сюда любой текст: статью, конспект, код…">${esc(S.customText)}</textarea>
+      <button class="primary" id="customGo">Начать</button>
+      <div class="muted" id="customInfo" style="font-size:12px">Кавычки «ёлочки» и длинные тире заменяются на клавиатурные. Символы, которых нет в раскладке ${lang === 'ru' ? 'ЙЦУКЕН' : 'QWERTY'}, удаляются.</div></div>`;
+    $('#customGo').onclick = () => {
+      S.customText = $('#customTa').value; saveDB();
+      const {s, removed} = normalizeText(S.customText, lang);
+      $('#customInfo').textContent = s ? `Символов: ${[...s].length}${removed ? `, удалено недоступных в раскладке: ${removed}` : ''}.` : 'Текст пуст.';
+      $('#customTa').blur();
+      newExercise();
+    };
+  } else if (S.mode === 'stats') {
+    box.innerHTML = `<h3>Статистика</h3><div class="muted" style="font-size:13px">Данные хранятся только в этом браузере (localStorage). Язык переключается сверху.</div>
+      <div class="stack" style="margin-top:12px"><button id="exportBtn">Экспорт в файл</button><button id="importBtn">Импорт из файла</button>
+      <button id="resetBtn">Сбросить статистику (${lang.toUpperCase()})</button></div>`;
+    $('#resetBtn').onclick = () => {
+      if (!confirm(`Удалить всю статистику и прогресс уроков для ${lang === 'ru' ? 'русского' : 'английского'} языка?`)) return;
+      DB.history = DB.history.filter(h => h.lang !== lang); DB.keys[lang] = {}; DB.progress[lang] = {};
+      saveDB(); renderStats();
+    };
+    $('#exportBtn').onclick = () => {
+      const blob = new Blob([JSON.stringify(DB, null, 1)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `typing-stats-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+    $('#importBtn').onclick = () => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        f.text().then(t => {
+          const d = JSON.parse(t);
+          if (!d || !Array.isArray(d.history)) throw new Error('bad');
+          DB.history = d.history; DB.keys = d.keys || {}; DB.progress = d.progress || {};
+          for (const l of ['ru','en']) { DB.progress[l] = DB.progress[l] || {}; DB.keys[l] = DB.keys[l] || {}; }
+          saveDB(); renderStats();
+        }).catch(() => alert('Не удалось прочитать файл статистики.'));
+      };
+      inp.click();
+    };
+  }
+}
+
+/* ---------- Экран статистики ---------- */
+function chartSvg(hist) {
+  const vals = hist.map(h => h.cpm);
+  if (vals.length < 2) return '<p class="muted">График появится после двух и более упражнений.</p>';
+  const W = 700, H = 220, PL = 40, PR = 12, PT = 12, PB = 26;
+  const max = Math.max(50, Math.ceil(Math.max(...vals) * 1.1 / 50) * 50);
+  const x = i => PL + i * (W - PL - PR) / (vals.length - 1);
+  const y = v => PT + (1 - v / max) * (H - PT - PB);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Скорость по упражнениям">`;
+  for (let k = 0; k <= 4; k++) {
+    const v = max * k / 4, yy = y(v);
+    s += `<line class="grid" x1="${PL}" x2="${W - PR}" y1="${yy}" y2="${yy}"/><text x="${PL - 6}" y="${yy + 4}" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  s += `<polyline class="line" points="${vals.map((v, i) => `${x(i)},${y(v)}`).join(' ')}"/>`;
+  if (vals.length >= 5) {
+    const avg = vals.map((_, i) => { const a = vals.slice(Math.max(0, i - 4), i + 1); return a.reduce((p, c) => p + c, 0) / a.length; });
+    s += `<polyline class="avg" points="${avg.map((v, i) => `${x(i)},${y(v)}`).join(' ')}"/>`;
+  }
+  hist.forEach((h, i) => {
+    s += `<circle class="dot${h.acc < 95 ? ' low' : ''}" cx="${x(i)}" cy="${y(h.cpm)}" r="3.5"><title>${new Date(h.t).toLocaleString('ru-RU')}\n${MODE_NAMES[h.mode] || h.mode}: ${h.cpm} зн/мин, ${h.acc}%</title></circle>`;
+  });
+  s += `<text x="${PL}" y="${H - 6}">← старые</text><text x="${W - PR}" y="${H - 6}" text-anchor="end">новые →</text></svg>`;
+  return s;
+}
+function renderStats() {
+  const lang = S.lang, sec = $('#stats');
+  const hist = DB.history.filter(h => h.lang === lang);
+  const last10 = hist.slice(-10);
+  const avg = a => a.length ? a.reduce((p, c) => p + c, 0) / a.length : 0;
+  const totalSec = hist.reduce((p, h) => p + (h.sec || 0), 0);
+  const passed = Object.values(DB.progress[lang]).filter(p => p.stars >= 2).length;
+  const best = hist.reduce((m, h) => Math.max(m, h.cpm), 0);
+  sec.innerHTML = `
+    <div class="cards">
+      <div class="card"><div class="v">${hist.length}</div><div class="l">упражнений</div></div>
+      <div class="card"><div class="v">${Math.floor(totalSec / 3600)}:${String(Math.floor(totalSec / 60) % 60).padStart(2, '0')}</div><div class="l">часов:минут практики</div></div>
+      <div class="card"><div class="v">${Math.round(avg(last10.map(h => h.cpm)))}</div><div class="l">зн/мин, среднее за 10</div></div>
+      <div class="card"><div class="v">${last10.length ? avg(last10.map(h => h.acc)).toFixed(1) : '—'}%</div><div class="l">точность, среднее за 10</div></div>
+      <div class="card"><div class="v">${best}</div><div class="l">рекорд, зн/мин</div></div>
+      <div class="card"><div class="v">${passed}/${LESSONS[lang].length}</div><div class="l">уроков пройдено</div></div>
+    </div>
+    <div class="card"><h3 style="margin:0 0 8px;font-size:15px">Скорость, зн/мин (последние 80)</h3>
+      ${chartSvg(hist.slice(-80))}
+      <div class="muted" style="font-size:12px">Пунктир — скользящее среднее по 5. Красные точки — точность ниже 95%.</div></div>
+    <div class="card"><h3 style="margin:0 0 10px;font-size:15px">Карта ошибок</h3>
+      <div class="kbd" id="heatKbd"></div>
+      <div class="muted" style="font-size:12px;margin-top:8px;text-align:center">Чем краснее клавиша, тем выше доля ошибок. Наведите курсор, чтобы увидеть числа.</div></div>
+    <div class="card"><h3 style="margin:0 0 8px;font-size:15px">Последние упражнения</h3>
+      ${hist.length ? `<table><tr><th>Дата</th><th>Режим</th><th>зн/мин</th><th>Точность</th><th>Время</th></tr>` +
+        hist.slice(-15).reverse().map(h => `<tr><td>${new Date(h.t).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+          <td>${MODE_NAMES[h.mode] || h.mode}${h.lesson != null ? ' ' + (h.lesson + 1) : ''}${h.book ? ' · ' + esc(h.book.split(' — ')[1] || h.book) : ''}</td><td>${h.cpm}</td><td>${h.acc}%</td><td>${fmtTime(h.sec || 0)}</td></tr>`).join('') + `</table>`
+        : '<p class="muted">Пока пусто.</p>'}</div>`;
+  const hm = buildKeyboard($('#heatKbd'), lang);
+  const agg = {};
+  for (const [c, v] of Object.entries(DB.keys[lang])) {
+    const inf = KB[lang].info[c]; if (!inf) continue;
+    const a = agg[inf.code] || (agg[inf.code] = {n:0, e:0});
+    a.n += v.n; a.e += v.e;
+  }
+  for (const [code, k] of Object.entries(hm)) {
+    const a = agg[code];
+    if (!a || !a.n) { k.title = 'нет данных'; continue; }
+    const rate = a.e / a.n;
+    const pct = Math.min(100, Math.round(rate / 0.15 * 100));  // 15% ошибок — максимально красный
+    k.style.background = `color-mix(in srgb, var(--bad) ${pct}%, var(--key))`;
+    k.title = `${a.e} ошибок из ${a.n} (${(rate * 100).toFixed(1)}%)`;
+  }
+}
+
+/* ---------- Переключатели ---------- */
+function applyTheme() {
+  if (S.theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = S.theme;
+}
+function syncHeader() {
+  document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('on', b.dataset.lang === S.lang));
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  document.documentElement.lang = S.lang;
+}
+function setMode(mode) {
+  S.mode = mode; saveDB(); syncHeader(); renderSide();
+  const st = mode === 'stats';
+  $('#trainer').hidden = st; $('#stats').hidden = !st;
+  if (st) { ex = null; renderStats(); } else newExercise();
+}
+function setLang(lang) {
+  S.lang = lang; saveDB(); syncHeader(); renderKeyboard(); setMode(S.mode);
+}
+
+document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('#btnRestart').onclick = restart;
+$('#btnNew').onclick = skipExercise;
+
+document.querySelectorAll('[data-set]').forEach(el => {
+  const k = el.dataset.set;
+  if (el.type === 'checkbox') el.checked = !!S[k]; else el.value = S[k];
+  el.addEventListener('change', () => {
+    S[k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? Math.max(30, +el.value || 150) : el.value;
+    saveDB();
+    if (k === 'theme') applyTheme();
+    if (k === 'kbd' || k === 'color') renderKeyboard();
+    if (k === 'hint') highlightNext();
+    if ((k === 'strict' || k === 'remap' || k === 'yo') && ex) restart();
+    if (el.type !== 'number') el.blur();
+  });
+});
+// чтобы пробел не «нажимал» последнюю кликнутую кнопку
+document.addEventListener('click', e => { const b = e.target.closest('button, input[type=checkbox]'); if (b) b.blur(); });
+document.addEventListener('keydown', onKey);
+window.addEventListener('resize', () => { if (ex && !$('#trainer').hidden) { renderText(); restoreMarks(); updateCursor(); } });
+function restoreMarks() {
+  for (let i = 0; i < ex.pos; i++) {
+    const el = ex.els[i];
+    if (ex.strict) el.classList.add(ex.errAt.has(i) ? 'fixed' : 'ok');
+    else el.classList.add(matches(ex.chars[i], ex.typed[i]) ? 'ok' : 'bad');
+  }
+}
+
+/* ---------- Старт ---------- */
+applyTheme();
+syncHeader();
+renderKeyboard();
+setMode(S.mode);
+</script>
+</body>
+</html>
