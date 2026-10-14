@@ -25,9 +25,11 @@ cd klava
 ./install.sh
 ```
 
-Klava появится в меню приложений. Файлы копируются в `~/.local/share/klava`. Если установлен Chromium, Chrome, Brave, Edge или Vivaldi, тренажёр откроется в отдельном окне без панелей браузера, иначе — во вкладке браузера по умолчанию.
+Klava появится в меню приложений. Файлы копируются в `~/.local/share/klava`.
 
-Удаление: `./install.sh --uninstall`.
+Тренажёр открывается в собственном окне на системном WebKitGTK (нужны `python3-gobject` и `webkitgtk6.0`, в Fedora с GNOME они уже есть). Если их нет — в отдельном окне Chromium, Chrome, Brave, Edge или Vivaldi, а если нет и их — во вкладке браузера по умолчанию.
+
+Статистика окна хранится в `~/.local/share/klava-data`. Удаление: `./install.sh --uninstall` (статистика остаётся).
 
 ### Windows
 

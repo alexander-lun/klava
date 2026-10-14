@@ -7,8 +7,12 @@ $ErrorActionPreference = 'Stop'
 
 $Root     = Split-Path -Parent $PSScriptRoot
 $Dest     = Join-Path $env:LOCALAPPDATA 'Klava'
-$StartLnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'Klava.lnk'
-$DeskLnk  = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Klava.lnk'
+# Create: if the folder does not exist yet, GetFolderPath would return an empty string
+function Get-Folder([string]$Name) {
+    [Environment]::GetFolderPath([Environment+SpecialFolder]$Name, [Environment+SpecialFolderOption]::Create)
+}
+$StartLnk = Join-Path (Get-Folder 'Programs') 'Klava.lnk'
+$DeskLnk  = Join-Path (Get-Folder 'Desktop') 'Klava.lnk'
 
 if ($Uninstall) {
     Remove-Item -LiteralPath $StartLnk, $DeskLnk -ErrorAction SilentlyContinue
